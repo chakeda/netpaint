@@ -1,47 +1,71 @@
+/****
+ * Kite Christianson -- Project 6 -- SOLO
+ * 
+ * Daniel Vaughn, CSC 335, Fall 2015, University of Arizona
+ * 
+ * GUI for NetPaint.
+ */
+
 package view;
 
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Line2D;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.*;
 
 import javax.swing.colorchooser.*;
 
-import model.PaintObject;
-import model.Line;
- 
+import model.*;
+import model.Rectangle;
 
 public class NetPaintGUI extends JPanel implements ChangeListener {
  
-    protected JColorChooser tcc;
-    protected JLabel banner;
+	// instanced components
+	private JColorChooser tcc;
+    private JLabel banner;
+    private JLabel notice;
+    private JRadioButton lineRadioButton;
+    private JRadioButton rectangleRadioButton;
+    private JRadioButton ovalRadioButton;
+    private JRadioButton imageRadioButton;
+    
+    // instanced data. serialize me!
+	private ArrayList<PaintObject> shapes = new ArrayList<PaintObject>();
  
+    /**************************************************
+     * Constructor. uses Oracle Demo code
+     **************************************************/
+	
     public NetPaintGUI() {
         super(new BorderLayout());
  
-        //the banner is an invisible element that holds color
+        //the banner is now an invisible element that holds color
         banner = new JLabel("");
         banner.setVisible(false);
  
         // build etch sketch
         JPanel drawingPanel = new EtchPanel();
         drawingPanel.setLayout(new BorderLayout());
-        drawingPanel.setPreferredSize(new Dimension(400, 400));
+        drawingPanel.setPreferredSize(new Dimension(800, 400));
         drawingPanel.add(banner, BorderLayout.CENTER);
         drawingPanel.setBorder(BorderFactory.createTitledBorder("Drawing Area"));
  
-        // panel for radio
-        JPanel radioPanel = new JPanel();
+        // panel for radios
+        JPanel radioPanel = new JPanel(new FlowLayout());
         ButtonGroup radioButtonGroup = new ButtonGroup();
-
+        
         // radios
-        JRadioButton lineRadioButton = new JRadioButton("Line",true);  
-        JRadioButton rectangleRadioButton = new JRadioButton("Rectangle");
-        JRadioButton ovalRadioButton = new JRadioButton("Oval");
-        JRadioButton imageRadioButton = new JRadioButton("Image");
+        lineRadioButton = new JRadioButton("Line", true);  
+        rectangleRadioButton = new JRadioButton("Rectangle");
+        ovalRadioButton = new JRadioButton("Oval");
+        imageRadioButton = new JRadioButton("Image");
         radioButtonGroup.add(lineRadioButton);
         radioButtonGroup.add(rectangleRadioButton);
         radioButtonGroup.add(ovalRadioButton);
@@ -56,19 +80,25 @@ public class NetPaintGUI extends JPanel implements ChangeListener {
         tcc.getSelectionModel().addChangeListener(this);
         tcc.setBorder(BorderFactory.createTitledBorder("Choose Text Color"));
  
+        // add panels to le jframe
         add(drawingPanel, BorderLayout.CENTER);
         add(radioPanel, BorderLayout.EAST);
         add(tcc, BorderLayout.PAGE_END);
     }
     
+    /**************************************************
+     * Our Drawing Panel
+     **************************************************/
+    
     // the etch and sketch panel
     class EtchPanel extends JPanel{
     	
+    	// panel areas
 		private int oldX, oldY, newX, newY;
 		private boolean isDrawing;
-		private ArrayList<Shape> lines = new ArrayList<Shape>();
 		
 		public EtchPanel(){
+			// build panel
 			isDrawing = false;
 			this.setBackground(Color.WHITE);
 			this.setSize(400, 400);
@@ -77,28 +107,30 @@ public class NetPaintGUI extends JPanel implements ChangeListener {
 			this.addMouseListener(listener);
 		}
 		
-		 public void paintComponent(Graphics g) {
+		@Override
+		public void paintComponent(Graphics g) {
 
-		    super.paintComponent(g);
-		    Graphics2D g2 = (Graphics2D)g;
-		
-		    g2.setColor(Color.RED);
-		    g2.drawLine(oldX, oldY, newX, newY);
+			super.paintComponent(g);
+			Graphics2D g2 = (Graphics2D) g;
 
+			// paint all the shapes
+			for (int i=0; i<shapes.size(); i++){
+				shapes.get(i).draw(g);
+			}
+			
+			// this draws the "preview" if you will, called by mouseMoved
+			if (isDrawing) {
+				g2.setColor(banner.getForeground());
+				Line2D.Double line = new Line2D.Double(oldX, oldY, newX, newY);
+				g2.draw(line);
+			}
 		}
     
 		private class ListenToMouse implements MouseListener, MouseMotionListener{
 
 			@Override
-			public void mouseDragged(MouseEvent e) {
-				
-				int x = e.getX();
-				int y = e.getY();
-				
-			}
-			
-			@Override
 			public void mouseMoved(MouseEvent e) {
+				// constantly get the new coordinates and refresh
 				newX = e.getX();
 				newY = e.getY();
 				repaint();
@@ -106,44 +138,50 @@ public class NetPaintGUI extends JPanel implements ChangeListener {
 
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				oldX = newX;
-				oldY = newY;
-				newX = e.getX();
-				newY = e.getY();
-				Shape line = new Line2D.Float(oldX, oldY, newX, newY);
-				lines.add(line);
-				repaint();
+				// on click 1, register it as old coordinate
+				if (!isDrawing) {
+					oldX = e.getX();
+					oldY = e.getY();
+				// on click 2, register as a shape and save it 
+				}else{
+					if (lineRadioButton.isSelected()){
+						shapes.add(new Line(oldX, oldY, newX, newY, banner.getForeground()));
+					}
+					if (rectangleRadioButton.isSelected()){
+						shapes.add(new Rectangle(oldX, oldY, newX, newY, banner.getForeground()));
+					}
+					if (ovalRadioButton.isSelected()){
+						shapes.add(new Oval(oldX, oldY, newX, newY, banner.getForeground()));
+					}
+					if (imageRadioButton.isSelected()){
+						shapes.add(new Doge(oldX, oldY, newX, newY, banner.getForeground()));
+					}
+				}
+				// always invert a click state to swap between
+				isDrawing = !isDrawing;
+
 			}
+			
 
-
+			// unused
 			@Override
-			public void mouseEntered(MouseEvent arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-
+			public void mouseEntered(MouseEvent e) { }
 			@Override
-			public void mouseExited(MouseEvent arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-
+			public void mouseExited(MouseEvent e) { }
 			@Override
-			public void mousePressed(MouseEvent arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-
+			public void mousePressed(MouseEvent e) { }
 			@Override
-			public void mouseReleased(MouseEvent arg0) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void mouseReleased(MouseEvent e) { }
+			@Override
+			public void mouseDragged(MouseEvent e) { }
 			
 		}
     
     }
     
+    /**************************************************
+     * Below is all of the stuff from the Oracle Demo.
+     **************************************************/
     
  
     public void stateChanged(ChangeEvent e) {
@@ -151,11 +189,6 @@ public class NetPaintGUI extends JPanel implements ChangeListener {
         banner.setForeground(newColor);
     }
  
-    /**
-     * Create the GUI and show it.  For thread safety,
-     * this method should be invoked from the
-     * event-dispatching thread.
-     */
     private static void createAndShowGUI() {
         //Create and set up the window.
         JFrame frame = new JFrame("Net Paint Client");
