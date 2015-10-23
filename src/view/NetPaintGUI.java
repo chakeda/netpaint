@@ -121,8 +121,18 @@ public class NetPaintGUI extends JPanel implements ChangeListener {
 			// this draws the "preview" if you will, called by mouseMoved
 			if (isDrawing) {
 				g2.setColor(banner.getForeground());
-				Line2D.Double line = new Line2D.Double(oldX, oldY, newX, newY);
-				g2.draw(line);
+				if (lineRadioButton.isSelected()){
+					new Line(oldX, oldY, newX, newY, banner.getForeground()).draw(g2);
+				}
+				if (rectangleRadioButton.isSelected()){
+					new Rectangle(oldX, oldY, newX, newY, banner.getForeground()).draw(g2);
+				}
+				if (ovalRadioButton.isSelected()){
+					new Oval(oldX, oldY, newX, newY, banner.getForeground()).draw(g2);
+				}
+				if (imageRadioButton.isSelected()){
+					new Doge(oldX, oldY, newX, newY, banner.getForeground()).draw(g2);;
+				}
 			}
 		}
     

@@ -22,7 +22,7 @@ public class Rectangle extends PaintObject {
 	public void draw(Graphics g) {
 		Graphics2D g2 = (Graphics2D) g;
 		g2.setColor(color);
-		// newx - oldx = width. remember geometry?
+		// newx - oldx = deltax = width. remember geometry?
 		int width = newX - oldX;
 		int height = newY - oldY;
 		int actualX = oldX;
@@ -44,6 +44,7 @@ public class Rectangle extends PaintObject {
 			height = oldY - newY;
 			actualY = newY;
 		}
+		// draw that mf
 		Rectangle2D.Double rect = new Rectangle2D.Double(
 				actualX, actualY, width, height);
 		g2.fill(rect);
