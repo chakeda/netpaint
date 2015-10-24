@@ -9,8 +9,9 @@ package model;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.io.Serializable;
 
-abstract public class PaintObject {
+abstract public class PaintObject implements Serializable{
 	
 	protected int oldX, oldY, newX, newY;
 	protected Color color;
