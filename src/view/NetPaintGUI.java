@@ -30,7 +30,6 @@ public class NetPaintGUI extends JPanel implements ChangeListener {
 	// instanced components
 	private JColorChooser tcc;
     private JLabel banner;
-    private JLabel notice;
     private JRadioButton lineRadioButton;
     private JRadioButton rectangleRadioButton;
     private JRadioButton ovalRadioButton;
