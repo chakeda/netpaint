@@ -222,4 +222,6 @@ public class NetPaintGUI extends JPanel implements ChangeListener {
             }
         });
     }
-}
+} 
+
+// test for github practice
