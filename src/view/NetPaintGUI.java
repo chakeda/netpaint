@@ -14,7 +14,11 @@ import java.awt.geom.Line2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Vector;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -35,8 +39,11 @@ public class NetPaintGUI extends JPanel implements ChangeListener {
     private JRadioButton ovalRadioButton;
     private JRadioButton imageRadioButton;
     
-    // instanced data. serialize me!
-	private ArrayList<PaintObject> shapes = new ArrayList<PaintObject>();
+    // network instances
+	private Vector<PaintObject> shapes = new Vector<PaintObject>();
+	private Socket socket;
+	private ObjectOutputStream oos;
+	private ObjectInputStream ois;
  
     /**************************************************
      * Constructor. uses Oracle Demo code
@@ -104,6 +111,51 @@ public class NetPaintGUI extends JPanel implements ChangeListener {
 			ListenToMouse listener = new ListenToMouse();
 			this.addMouseMotionListener(listener);
 			this.addMouseListener(listener);
+			
+			// start thread stuff
+			connect();
+			new ServerListener().start();
+		}
+		
+		private class ServerListener extends Thread{
+			@Override
+			public void run() {
+				// Repeatedly accept String objects from the server and add
+				try{
+					while(true){
+						shapes = ((Vector<PaintObject>) ois.readObject());
+						repaint();
+					}
+				}catch (ClassNotFoundException e){
+					e.printStackTrace();
+				}catch (IOException e) {
+					e.printStackTrace();
+				}
+
+			}
+		}
+		
+		public void connect(){
+			try {
+				// connect to server
+				socket = new Socket("localHost", 9001);
+
+				oos = new ObjectOutputStream(socket.getOutputStream());
+				ois = new ObjectInputStream(socket.getInputStream());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		
+		public void sendToServer(){
+			for (PaintObject shape : shapes){
+				try {
+					oos.writeObject(shape);
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
 		}
 		
 		@Override
@@ -133,6 +185,7 @@ public class NetPaintGUI extends JPanel implements ChangeListener {
 					new Doge(oldX, oldY, newX, newY, banner.getForeground()).draw(g2);;
 				}
 			}
+			
 		}
     
 		private class ListenToMouse implements MouseListener, MouseMotionListener{
@@ -168,7 +221,9 @@ public class NetPaintGUI extends JPanel implements ChangeListener {
 				}
 				// always invert a click state to swap between
 				isDrawing = !isDrawing;
-
+				
+				// send shapes state to server
+				sendToServer();
 			}
 			
 
